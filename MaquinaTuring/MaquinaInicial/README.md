@@ -20,7 +20,7 @@ MaquinaInicial/
 
 ---
 
-## 🚀 Cómo compilar y ejecutar
+## Cómo compilar y ejecutar
 
 ### Compilar el backend
 
@@ -35,13 +35,11 @@ javac -encoding UTF-8 -d out src\*.java
 java -cp out ServidorHttpTuring
 ```
 
-### Acceder a la UI educativa
-
 - Abre: `http://localhost:8787/index.html`
 
 ---
 
-## 🔁 Flujo principal de la Máquina de Turing
+## Flujo principal de la Máquina de Turing
 
 1. El usuario envía un texto al backend desde la UI.
 2. `ConvertidorBinario.convertirABinario()` convierte cada carácter en su representación ASCII de 8 bits.
@@ -51,7 +49,7 @@ java -cp out ServidorHttpTuring
 
 ---
 
-## 🔢 Conversión de letras y números a binario
+## Conversión de letras y números a binario
 
 ### ¿Cómo convierte la máquina el texto?
 
@@ -72,16 +70,13 @@ java -cp out ServidorHttpTuring
 ### Resultado en cinta
 
 Para el texto `AB`, la cinta recibe:
-
 ```
 0100000101000010
 ```
-
 Cada carácter aparece como 8 bits consecutivos.
-
 ---
 
-## 🧠 Componentes de la Máquina de Turing
+##  Componentes de la Máquina de Turing
 
 ### `ConvertidorBinario.java`
 - Convierte texto a binario ASCII de 8 bits.
@@ -113,7 +108,7 @@ Cada carácter aparece como 8 bits consecutivos.
 
 ---
 
-## ⚙️ Estados y ciclo de ejecución
+## Estados y ciclo de ejecución
 
 La máquina utiliza un ciclo obligatorio de 4 estados por cada bit:
 
@@ -127,7 +122,7 @@ La máquina utiliza un ciclo obligatorio de 4 estados por cada bit:
 
 ---
 
-## 📋 Tabla de transiciones principales
+## Tabla de transiciones principales
 
 | ID | Estado actual | Lee | Escribe | Mueve | Siguiente | Propósito |
 |----|---------------|-----|---------|-------|-----------|-----------|
@@ -148,7 +143,7 @@ La máquina utiliza un ciclo obligatorio de 4 estados por cada bit:
 
 ---
 
-## 🔍 Ejemplo paso a paso
+## Ejemplo paso a paso
 
 ### Entrada: `B`
 - ASCII: 66
@@ -183,7 +178,7 @@ La máquina utiliza un ciclo obligatorio de 4 estados por cada bit:
 
 ---
 
-## 🔧 Cómo funciona la cinta y el cabezal
+## Cómo funciona la cinta y el cabezal
 
 - La cinta almacena bits en posiciones enteras.
 - El cabezal lee el símbolo actual con `leer()`.
@@ -193,7 +188,7 @@ La máquina utiliza un ciclo obligatorio de 4 estados por cada bit:
 
 ---
 
-## 📡 API disponible
+## API disponible
 
 ### `POST /api/init`
 - Inicializa la máquina con el texto enviado.
@@ -215,15 +210,10 @@ La máquina utiliza un ciclo obligatorio de 4 estados por cada bit:
 
 ---
 
-## 💡 Notas importantes
+## Notas importantes
 
 - El proyecto mantiene el comportamiento exacto del código activo.
 - Esta documentación reemplaza múltiples archivos dispersos y concentra toda la información en un solo `README.md`.
 - No se modificó ninguna lógica de código existente.
 
 ---
-
-## 📌 Archivo único de documentación
-
-Queda preservado únicamente este `README.md` como la documentación central del proyecto. Todos los demás archivos `*.md` han sido eliminados para mantener el repositorio ligero y enfocado.
-
