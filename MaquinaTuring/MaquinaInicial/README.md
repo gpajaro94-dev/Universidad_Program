@@ -1,10 +1,10 @@
-# Máquina de Turing en Java - Documentación en Español
+# Máquina de Turing
 
 Este proyecto implementa una Máquina de Turing educativa en Java con una interfaz visual basada en `index.html`. El backend transforma cualquier texto en una secuencia binaria ASCII de 8 bits por carácter y simula la ejecución del cabezal sobre una cinta infinita.
 
 ---
 
-## 📁 Estructura esencial del proyecto
+## Estructura esencial del proyecto
 
 ```
 MaquinaInicial/
@@ -18,26 +18,6 @@ MaquinaInicial/
 └── README.md                     # Documentación en español
 ```
 
----
-
-## Cómo compilar y ejecutar
-
-### Compilar el backend
-
-```bash
-cd MaquinaInicial
-javac -encoding UTF-8 -d out src\*.java
-```
-
-### Ejecutar el servidor HTTP
-
-```bash
-java -cp out ServidorHttpTuring
-```
-
-- Abre: `http://localhost:8787/index.html`
-
----
 
 ## Flujo principal de la Máquina de Turing
 
