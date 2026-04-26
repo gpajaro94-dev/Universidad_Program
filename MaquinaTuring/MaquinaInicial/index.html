@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máquina de Turing | Binario Visual</title>
+    <style>
+        /* === VARIABLES DE COLOR (INTOCABLES) === */
+        :root {
+            --bg: #09101e;
+            --panel: #111a2f;
+            --panel-2: #0d1528;
+            --line: #25365d;
+            --text: #edf3ff;
+            --muted: #9db2da;
+            --neon: #18e6ff;
+            --ok: #14f0a2;
+            --warn: #ffbc42;
+            --danger: #ff5887;
+            --cell-size: 58px;
+            --font: "Consolas", "JetBrains Mono", "Courier New", monospace;
+        }
+
+        /* === RESET & BASE === */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: radial-gradient(circle at top, #132347 0%, #070d19 66%);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            padding: 24px 20px;
+        }
+
+        /* === UTILIDADES === */
+        .hidden { display: none !important; }
+        .section-title { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;}
+
+        /* === LAYOUT ESTRUCTURAL === */
+        .app { max-width: 1300px; margin: 0 auto; display: grid; gap: 20px; }
+        
+        .layout { 
+            display: grid; 
+            grid-template-columns: 1.2fr 0.8fr; 
+            gap: 20px; 
+        }
+        
+        /* Solución al desbordamiento de CSS Grid */
+        .layout > .panel {
+            min-width: 0; 
+        }
+
+        @media (max-width: 1100px) { 
+            .layout { grid-template-columns: 1fr; } 
+            .controls { grid-template-columns: 1fr 1fr; } 
+        }
+
+        /* === COMPONENTES === */
+        .panel {
+            background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: inset 0 0 0 1px rgba(22, 245, 255, 0.05);
+        }
+
+        /* Tipografía de Cabecera */
+        h1 { color: var(--neon); font-size: 1.25rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .subtitle { color: var(--muted); margin-top: 8px; font-size: 0.85rem; line-height: 1.5; }
+
+        /* Controles (Inputs y Botones) */
+        .controls { display: grid; gap: 12px; grid-template-columns: 1fr auto auto auto auto; align-items: end; }
+        .controls label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: bold; }
+        
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        
+        input[type="text"] {
+            width: 100%; padding: 10px 14px;
+            border-radius: 8px; border: 1px solid var(--line);
+            background: #0b1224; color: var(--text); font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus { outline: none; border-color: var(--neon); }
+
+        button {
+            padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line);
+            background: #132246; color: var(--text); cursor: pointer; font-family: inherit;
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.08em; font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        button:hover { border-color: var(--neon); color: var(--neon); background: rgba(24, 230, 255, 0.05); }
+        button:active { transform: translateY(1px); }
+        
+        .btn-primary { background: rgba(0, 245, 160, 0.12); border-color: var(--ok); color: var(--ok); }
+        .btn-primary:hover { background: rgba(0, 245, 160, 0.2); border-color: var(--ok); color: var(--ok); }
+
+        /* Slider de velocidad */
+        .speed-box { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
+        input[type="range"] { width: 100%; accent-color: var(--ok); cursor: pointer; }
+        .speed-readout { color: var(--neon); font-size: 0.8rem; text-align: center; font-weight: bold; }
+
+        /* Diccionario / Log */
+        .dictionary {
+            margin-top: 16px; padding: 12px; border-radius: 8px;
+            border: 1px dashed var(--line); background: #0a1225;
+            min-height: 52px; font-size: 0.9rem; color: var(--muted); line-height: 1.5;
+        }
+        .dictionary b { color: var(--neon); }
+        .dict-binary { color: var(--ok); font-weight: bold; }
+
+        /* === CINTA (TAPE) === */
+        .tape-wrap { overflow-x: auto; padding-bottom: 12px; margin-bottom: 8px; scroll-behavior: smooth; }
+        .tape-wrap::-webkit-scrollbar { height: 8px; }
+        .tape-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+        .tape { position: relative; display: flex; gap: 8px; align-items: flex-start; width: max-content; min-width: 100%; padding-top: 24px; padding-bottom: 34px; }
+        .cell-col { width: var(--cell-size); text-align: center; flex-shrink: 0; }
+        .cell {
+            width: var(--cell-size); height: var(--cell-size);
+            border: 2px solid var(--line); border-radius: 8px; display: grid; place-items: center;
+            background: #0c1429; font-size: 1.2rem; font-weight: bold;
+            transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+        }
+        .cell.active {
+            border-color: var(--warn);
+            box-shadow: 0 0 14px rgba(255, 190, 61, 0.45), inset 0 0 10px rgba(255, 190, 61, 0.22);
+            transform: translateY(-4px) scale(1.05);
+            background: #1a2238;
+        }
+        
+        .read-tag { margin-top: 8px; font-size: 0.65rem; letter-spacing: 0.08em; color: transparent; height: 12px; font-weight: bold; transition: color 0.2s; }
+        .read-tag.show { color: var(--ok); }
+        
+        .head {
+            position: absolute; top: 0; width: var(--cell-size); text-align: center;
+            color: var(--neon); font-weight: bold; font-size: 0.75rem;
+            transition: left 320ms cubic-bezier(0.25, 0.95, 0.2, 1);
+            pointer-events: none; z-index: 10;
+        }
+        .head::before { content: "▼"; display: block; font-size: 1.2rem; line-height: 1; text-shadow: 0 0 8px var(--neon); }
+        .head::after { content: "LEYENDO"; display: block; margin-top: 4px; letter-spacing: 0.05em; }
+
+        /* === METADATOS Y REGLAS === */
+        .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; margin-bottom: 20px;}
+        .meta-box { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #0a1225; text-align: center; }
+        .meta-k { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em;}
+        .meta-v { color: var(--neon); font-size: 1.1rem; margin-top: 6px; font-weight: bold;}
+
+        .rules { 
+            border: 1px solid var(--line); 
+            border-radius: 8px; 
+            background: #0e1833; 
+            overflow-x: auto; 
+            overflow-y: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { padding: 10px; border-bottom: 1px solid #1b274a; text-align: left; }
+        th { color: var(--muted); text-transform: uppercase; font-size: 0.7rem; font-weight: bold; }
+        tbody tr { transition: background 200ms ease, opacity 200ms ease; }
+        tbody tr:not(.highlight) { opacity: 0.6; }
+        tr.highlight td {
+            background: linear-gradient(90deg, rgba(22,245,255,0.15), rgba(0,245,160,0.1));
+            box-shadow: inset 0 0 12px rgba(22,245,255,0.2);
+            color: #f0ffff; opacity: 1;
+        }
+        tr.highlight td:first-child { color: var(--ok); font-weight: bold; }
+        
+        .status { margin-top: 12px; color: var(--muted); font-size: 0.85rem; padding: 8px; background: #0a1225; border-radius: 6px; border: 1px dashed var(--line);}
+        .status span { color: var(--ok); font-weight: bold; }
+
+        /* Monitor de Proceso Mejorado (Evita Blowout) */
+        .process-log { 
+            max-height: 500px; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            border: 1px solid var(--line); 
+            border-radius: 8px; 
+            background: #091024; 
+            padding: 16px; 
+        }
+        .process-log::-webkit-scrollbar { width: 6px; }
+        .process-log::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+        
+        .log-item { 
+            color: var(--text); 
+            font-size: 0.85rem; 
+            margin-bottom: 10px; 
+            line-height: 1.5; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid rgba(37, 54, 93, 0.4); 
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .log-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .log-item b { color: var(--ok); }
+
+        /* === PANEL DE ESTADOS === */
+        .state-panel {
+            display: grid; gap: 16px;
+            background: linear-gradient(135deg, rgba(22,245,255,0.05), rgba(0,245,160,0.03));
+            border: 1px solid var(--line); border-radius: 12px;
+            padding: 20px; margin-bottom: 0;
+        }
+        .state-circles { display: flex; gap: 16px; justify-content: space-around; align-items: center; padding: 10px 0;}
+        .state-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            border: 2px solid var(--line);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            background: #0a1225; color: var(--muted);
+        }
+        .state-circle.active {
+            border-color: var(--neon); background: rgba(22,245,255,0.15);
+            box-shadow: 0 0 25px rgba(22,245,255,0.4), inset 0 0 12px rgba(22,245,255,0.2);
+            color: var(--neon); transform: scale(1.1);
+        }
+        .state-circle.complete { border-color: var(--ok); background: rgba(20,240,162,0.1); color: var(--ok); }
+        .state-label { font-size: 1.2rem; font-weight: bold; }
+        .state-desc { font-size: 0.65rem; opacity: 0.8; margin-top: 4px; text-align: center; font-weight: bold; }
+        .state-arrow { color: var(--line); font-size: 1.5rem; }
+
+        /* === INDICADOR DE LECTURA MEJORADO === */
+        .read-indicator {
+            background: linear-gradient(90deg, rgba(22,245,255,0.1), rgba(255,190,61,0.05));
+            border: 1px solid var(--line); border-radius: 8px; padding: 16px;
+            margin-top: 8px;
+        }
+        .read-indicator-row { 
+            display: flex; 
+            gap: 16px; 
+            margin-top: 12px; 
+            flex-wrap: wrap; 
+        }
+        .read-indicator-item { 
+            flex: 1; 
+            min-width: 130px; 
+            background: rgba(0,0,0,0.2); 
+            padding: 10px; 
+            border-radius: 6px;
+            overflow: hidden; 
+        }
+        .read-indicator-key { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: bold;}
+        .read-indicator-value { 
+            color: var(--neon); 
+            font-weight: bold; 
+            font-size: 1.1rem; 
+            margin-top: 4px; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .read-indicator-value.action { color: var(--warn); }
+
+        /* === LEYENDA DE TRADUCCIÓN === */
+        .translation-header { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 12px; font-weight: bold; letter-spacing: 0.05em;}
+        .translation-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; font-size: 0.95rem; }
+        .translation-char { color: var(--text); font-weight: bold; min-width: 32px; text-align: center; background: #132246; padding: 4px; border-radius: 4px;}
+        .translation-arrow { color: var(--muted); opacity: 0.6; }
+        .translation-binary { color: var(--ok); font-family: var(--font); letter-spacing: 0.05em; font-weight: bold; }
+        .translation-ascii { color: var(--muted); font-size: 0.8rem; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="panel">
+            <h1> Máquina de Turing </h1>
+            <p class="subtitle"> Convierte Texto a Binario </p>
+        </header>
+
+        <section class="panel">
+            <div class="controls">
+                <div class="input-group">
+                    <label for="userInput"> Texto o Cifra Numerica </label>
+                    <input id="userInput" type="text" value="Hola" autocomplete="off" placeholder="Ingresa texto aquí...">
+                </div>
+                <button id="convertBtn" class="btn-primary">Convertir</button>
+                <button id="initBtn">Iniciar</button>
+                <button id="stepBtn">Paso a Paso</button>
+                <button id="autoBtn"> Proceso Automatico</button>
+                <div class="speed-box">
+                    <label for="speedSlider">Velocidad</label>
+                    <input id="speedSlider" type="range" min="80" max="1000" step="20" value="360">
+                    <div class="speed-readout" id="speedReadout">360 ms</div>
+                </div>
+            </div>
+            <div class="dictionary" id="dictionary">
+                Escribe un texto y pulsa <b>Convertir</b>
+        </section>
+
+        <section class="panel state-panel hidden" id="statePanel">
+            <h2 class="section-title">Ciclo de 4 Estados:</h2>
+            <div class="state-circles" id="stateCircles"></div>
+            <div class="read-indicator hidden" id="readIndicator"></div>
+        </section>
+
+        <main class="layout">
+            <section class="panel">
+                <h2 class="section-title"> Movimiento de la Cinta </h2>
+                <div class="tape-wrap" id="tapeWrap">
+                    <div class="tape" id="tape"></div>
+                </div>
+                
+                <div class="meta">
+                    <div class="meta-box"><div class="meta-k">Paso</div><div class="meta-v" id="metaStep">0</div></div>
+                    <div class="meta-box"><div class="meta-k">Estado</div><div class="meta-v" id="metaState">Q0</div></div>
+                    <div class="meta-box"><div class="meta-k">Bit leído</div><div class="meta-v" id="metaBit">-</div></div>
+                    <div class="meta-box"><div class="meta-k">Cabezal</div><div class="meta-v" id="metaHead">0</div></div>
+                </div>
+
+                <div class="rules">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th><th>Estado</th><th>Lee</th><th>Escribe</th><th>Mueve</th><th>Siguiente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rulesBody"></tbody>
+                    </table>
+                </div>
+                <div class="status">Estado de ejecución: <span id="runState">Esperando conversión</span></div>
+            </section>
+
+            <section class="panel">
+                <h2 class="section-title">Monitor de Proceso</h2>
+                <div class="process-log" id="processLog"></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        (() => {
+            // === ESTADO DE LA UI ===
+            const ui = {
+                input: document.getElementById("userInput"),
+                dictionary: document.getElementById("dictionary"),
+                tapeWrap: document.getElementById("tapeWrap"),
+                tape: document.getElementById("tape"),
+                rulesBody: document.getElementById("rulesBody"),
+                processLog: document.getElementById("processLog"),
+                metaStep: document.getElementById("metaStep"),
+                metaState: document.getElementById("metaState"),
+                metaBit: document.getElementById("metaBit"),
+                metaHead: document.getElementById("metaHead"),
+                runState: document.getElementById("runState"),
+                convertBtn: document.getElementById("convertBtn"),
+                initBtn: document.getElementById("initBtn"),
+                stepBtn: document.getElementById("stepBtn"),
+                autoBtn: document.getElementById("autoBtn"),
+                speedSlider: document.getElementById("speedSlider"),
+                speedReadout: document.getElementById("speedReadout"),
+                statePanel: document.getElementById("statePanel"),
+                stateCircles: document.getElementById("stateCircles"),
+                readIndicator: document.getElementById("readIndicator")
+            };
+
+            // === ESTADO DE LA MÁQUINA ===
+            const maquina = {
+                input: "",
+                binario: "",
+                reglas: [],
+                bitsCinta: [],
+                cabezal: 0,
+                paso: 0,
+                estado: "Q0",
+                ejecutando: false,
+                temporizadorAutomatico: null
+            };
+
+            // === UTILIDADES ===
+            const safe = text => String(text).replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])
+            );
+            
+            const delayMs = () => Number(ui.speedSlider.value);
+            
+            const updateSpeedLabel = () => ui.speedReadout.textContent = `${delayMs()} ms`;
+
+            // === API CALLS ===
+            const postJson = async (url, payload = {}) => {
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(await response.text() || "Error de backend");
+                    return await response.json();
+                } catch (error) {
+                    console.error("API Error:", error);
+                    logStep(`<b style="color:var(--danger)">Error de conexión:</b> ${safe(error.message)}`);
+                    throw error;
+                }
+            };
+
+            // === RENDERIZADO (UI Updates) ===
+            const renderDictionary = (input, binary) => {
+                if (!input) {
+                    ui.dictionary.innerHTML = `<div class='translation-header'>Entrada vacía</div>`;
+                    return;
+                }
+
+                let htmlContent = `<div class='translation-header'>Conversión ASCII → Binario</div>`;
+                
+                for (let i = 0; i < input.length; i++) {
+                    const bits = binary.slice(i * 8, i * 8 + 8);
+                    const ascii = input.charCodeAt(i);
+                    htmlContent += `
+                        <div class='translation-row'>
+                            <span class='translation-char'>${safe(input[i])}</span>
+                            <span class='translation-arrow'>→</span>
+                            <span class='translation-binary'>${bits}</span>
+                            <span class='translation-ascii'>(ASCII ${ascii})</span>
+                        </div>
+                    `;
+                }
+
+                htmlContent += `
+                    <div style='margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);'>
+                        <div style='color:var(--muted); font-size:0.75rem; text-transform:uppercase; font-weight:bold;'>Total Convertido:</div>
+                        <div style='color:var(--ok); font-family:var(--font); margin-top:6px; letter-spacing:0.05em; font-size:1.1rem; word-break:break-all;'>
+                            ${safe(binary)}
+                        </div>
+                    </div>
+                `;
+                
+                ui.dictionary.innerHTML = htmlContent;
+            };
+
+            const renderStatePanel = currentState => {
+                const states = [
+                    { id: "q0", name: "q0", desc: "Lectura" },
+                    { id: "q1", name: "q1", desc: "Procesamiento" },
+                    { id: "q2", name: "q2", desc: "Escritura" },
+                    { id: "q3", name: "q3", desc: "Verificación" }
+                ];
+
+                ui.stateCircles.innerHTML = states.map((s, i) => {
+                    const isActive = s.id === currentState;
+                    const isComplete = currentState === "q_accept" || (states.findIndex(x => x.id === currentState) > i);
+                    const cls = `state-circle ${isActive ? "active" : ""} ${isComplete && !isActive ? "complete" : ""}`;
+                    
+                    return `
+                        <div class='${cls}'>
+                            <div class='state-label'>${s.name}</div>
+                            <div class='state-desc'>${s.desc}</div>
+                        </div>
+                        ${i < 3 ? `<div class='state-arrow'>→</div>` : ""}
+                    `;
+                }).join("");
+            };
+
+            const renderReadIndicator = data => {
+                if (!data || !data.lastStep) {
+                    ui.readIndicator.classList.add("hidden");
+                    return;
+                }
+
+                const { currentState, currentStateInfo = {}, bitRead, nextState, nextStateInfo = {} } = data.lastStep;
+                const actionMap = { "q0": "Leyendo bit", "q1": "Validando", "q2": "Procesando", "q3": "Verificando" };
+                const action = actionMap[currentState] || "Procesando";
+
+                ui.readIndicator.innerHTML = `
+                    <div style='color:var(--ok); font-weight:bold; font-size:0.9rem;'>Información Actual del Paso</div>
+                    <div class='read-indicator-row'>
+                        <div class='read-indicator-item'>
+                            <div class='read-indicator-key'>Estado</div>
+                            <div class='read-indicator-value'>${safe(currentState)} ${currentStateInfo.name ? `(${safe(currentStateInfo.name)})` : ""}</div>
+                        </div>
+                        <div class='read-indicator-item'>
+                            <div class='read-indicator-key'>Acción</div>
+                            <div class='read-indicator-value action'>${action}</div>
+                        </div>
+                    </div>
+                    <div class='read-indicator-row'>
+                        <div class='read-indicator-item'>
+                            <div class='read-indicator-key'>Bit Leído</div>
+                            <div class='read-indicator-value'>${safe(bitRead)}</div>
+                        </div>
+                        <div class='read-indicator-item'>
+                            <div class='read-indicator-key'>Transición a</div>
+                            <div class='read-indicator-value'>
+                                ${safe(nextState)} ${nextStateInfo.name ? `(${safe(nextStateInfo.name)})` : ""}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                ui.readIndicator.classList.remove("hidden");
+            };
+
+            const renderRules = highlightId => {
+                ui.rulesBody.innerHTML = maquina.reglas.map(r => `
+                    <tr class='${r.id === highlightId ? "highlight" : ""}'>
+                        <td>${r.id}</td>
+                        <td>${r.state}</td>
+                        <td>${r.read}</td>
+                        <td>${r.write}</td>
+                        <td>${r.move}</td>
+                        <td>${r.next}</td>
+                    </tr>
+                `).join("");
+            };
+
+            const centrarCabezal = () => {
+                const cell = ui.tape.querySelector(`[data-index="${maquina.cabezal}"]`);
+                if (!cell) return;
+                const target = cell.offsetLeft - (ui.tapeWrap.clientWidth - cell.clientWidth) / 2;
+                ui.tapeWrap.scrollTo({ left: Math.max(target, 0), behavior: "smooth" });
+            };
+
+            const renderCinta = () => {
+                if (!maquina.bitsCinta.length) {
+                    ui.tape.innerHTML = "";
+                    return;
+                }
+
+                const cellsHtml = maquina.bitsCinta.map((bit, i) => {
+                    const isActive = i === maquina.cabezal;
+                    return `
+                        <div class='cell-col' data-index='${i}'>
+                            <div class='cell ${isActive ? "active" : ""}'>${bit}</div>
+                            <div class='read-tag ${isActive ? "show" : ""}'>LEYENDO</div>
+                        </div>
+                    `;
+                }).join("");
+
+                // Cálculo posicional del cabezal (ancho de celda + gap)
+                const cellTotalWidth = 58 + 8; 
+                const headLeft = maquina.cabezal * cellTotalWidth;
+                
+                ui.tape.innerHTML = `
+                    <div class='head' style='left:${headLeft}px'>
+                        <div style='font-size:0.55rem; line-height:1; color:var(--muted); margin-bottom:4px; letter-spacing:0.1em;'>ESTADO</div>
+                    </div>
+                    ${cellsHtml}
+                `;
+
+                centrarCabezal();
+            };
+
+            const logStep = message => {
+                const row = document.createElement("div");
+                row.className = "log-item";
+                row.innerHTML = message;
+                ui.processLog.prepend(row);
+            };
+
+            const syncMeta = bit => {
+                ui.metaStep.textContent = maquina.paso;
+                ui.metaState.textContent = maquina.estado;
+                ui.metaBit.textContent = bit || "-";
+                ui.metaHead.textContent = maquina.cabezal;
+                ui.runState.textContent = maquina.ejecutando ? "Procesando" : (maquina.estado === "Q_ACCEPT" ? "Aceptado" : "Detenido");
+            };
+
+            const applySnapshot = data => {
+                Object.assign(maquina, {
+                    input: data.input,
+                    binario: data.binary,
+                    reglas: data.rules || [],
+                    estado: data.state,
+                    paso: data.stepCount,
+                    cabezal: Math.min(data.headPosition, Math.max(0, data.binary.length - 1)),
+                    ejecutando: data.running,
+                    bitsCinta: data.binary ? data.binary.split("") : []
+                });
+
+                renderCinta();
+                renderRules(data.highlightRuleId);
+                renderStatePanel(data.state);
+                renderReadIndicator(data);
+                syncMeta(maquina.bitsCinta[maquina.cabezal] || "-");
+                
+                if (maquina.binario) ui.statePanel.classList.remove("hidden");
+            };
+
+            // === LÓGICA DE NEGOCIO ===
+            const stopAuto = () => {
+                if (maquina.temporizadorAutomatico) {
+                    clearTimeout(maquina.temporizadorAutomatico);
+                    maquina.temporizadorAutomatico = null;
+                }
+            };
+
+            const convertInput = async () => {
+                stopAuto();
+                const data = await postJson("/api/init", { input: ui.input.value });
+                renderDictionary(data.input, data.binary);
+                applySnapshot(data);
+                
+                ui.processLog.innerHTML = "";
+                logStep(`<b>Conversión exitosa:</b> '${safe(data.input || "(vacío)")}' → <span class='dict-binary'>${safe(data.binary || "(sin bits)")}</span>`);
+                ui.runState.textContent = "Listo para iniciar";
+            };
+
+            const initTape = async () => {
+                stopAuto();
+                const data = await postJson("/api/reset");
+                applySnapshot(data);
+                ui.processLog.innerHTML = "";
+                logStep(`<b>Inicialización:</b> Cinta recargada con ${maquina.bitsCinta.length} bits en posición cero.`);
+            };
+
+            const stepOnce = async () => {
+                if (!maquina.binario) return;
+                
+                const data = await postJson("/api/step");
+                applySnapshot(data);
+                
+                const last = data.lastStep;
+                if (!last) return;
+                
+                const movementText = last.ruleId === 3 ? "manteniendo la posición" : "moviendo a la derecha";
+                logStep(
+                    `<b>Paso ${last.stepNumber}:</b> Leyendo bit <span style="color:var(--warn)">${last.bitRead}</span> ` +
+                    `→ Estado <b>${last.currentState}</b> ` +
+                    `→ Aplicando regla #${last.ruleId ?? "ninguna"} ` +
+                    `→ ${movementText}.`
+                );
+            };
+
+            const autoRun = async () => {
+                stopAuto();
+                const tick = async () => {
+                    await stepOnce();
+                    if (maquina.ejecutando) {
+                        maquina.temporizadorAutomatico = setTimeout(tick, delayMs());
+                    } else {
+                        logStep(`<b>Ejecución finalizada.</b> Cadena procesada completamente.`);
+                    }
+                };
+                
+                if (maquina.binario && maquina.ejecutando) tick();
+            };
+
+            // === EVENT LISTENERS ===
+            ui.convertBtn.addEventListener("click", () => convertInput().catch(console.error));
+            ui.initBtn.addEventListener("click", () => initTape().catch(console.error));
+            ui.stepBtn.addEventListener("click", () => { stopAuto(); stepOnce().catch(console.error); });
+            ui.autoBtn.addEventListener("click", () => autoRun().catch(console.error));
+            
+            ui.speedSlider.addEventListener("input", updateSpeedLabel);
+            ui.input.addEventListener("keydown", e => {
+                if (e.key === "Enter") convertInput().catch(console.error);
+            });
+
+            // Inicialización de UI
+            updateSpeedLabel();
+        })();
+    </script>
+</body>
+</html>
